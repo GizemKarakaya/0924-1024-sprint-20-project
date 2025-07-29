@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tr.com.workintech.s20.app.entity.User;
 import tr.com.workintech.s20.app.exception.AuthenticationException;
+import tr.com.workintech.s20.app.security.JwtAuthentication;
 import tr.com.workintech.s20.app.service.JwtService;
 
 import java.io.IOException;
@@ -27,9 +28,12 @@ public class JwtFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
     // Check if we need authentication
-    if (request.getServletPath().startsWith("/auth"))
-      return;
+    if (request.getServletPath().startsWith("/auth/")){
+      log.debug("Skipping JWT filter for auth path");
 
+      filterChain.doFilter(request, response);
+      return;
+    }
     // Get authorization header
     String authHeader = request.getHeader("Authorization");
 
@@ -56,6 +60,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
     User user = jwtService.verify(token);
 
-    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user, null));
+    SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(user));
+
+    //Do the rest ıf filter
+    filterChain.doFilter(request, response);
+
   }
 }
